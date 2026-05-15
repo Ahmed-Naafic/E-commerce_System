@@ -1,15 +1,17 @@
-const express=require("express");
-const cors=require("cors");
+const express = require("express");
+const cors = require("cors");
 
-const app=express();
+const authRoutes = require("./modules/auth/routes/authRoutes");
 
+const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.get("/",(req,res)=>{
-    res.send('api is runing')
+app.get("/", (req, res) => {
+  res.send("api is running");
 });
 
-module.exports=app;
+app.use("/api/auth", authRoutes);
 
+module.exports = app;
