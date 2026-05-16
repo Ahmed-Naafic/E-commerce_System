@@ -25,7 +25,15 @@ const userSchema = new mongoose.Schema(
             required:true,
             enam:["admin", "customer"],
             default:"customer"
-        }
+        },
+        loginAttempts: {
+          type: Number,
+          default: 0,
+        },
+
+        lockUntil: {
+        type: Date,
+          },
       
     },
       {
