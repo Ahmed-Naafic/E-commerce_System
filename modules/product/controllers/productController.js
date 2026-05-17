@@ -1,4 +1,6 @@
 const Product = require("../models/Product");
+const Category = require("../../category/models/Category.js");
+const mongoose = require("mongoose");
 
 const createProduct = async (req, res) => {
   try {
@@ -18,13 +20,28 @@ const createProduct = async (req, res) => {
       });
     }
 
+    //check existing category
+    if (!mongoose.Types.ObjectId.isValid(category)) {
+      return res.status(400).json({
+        message:"invalid category"
+      })
+    }
+
+    const existingCategory = await Category.findById(category);
+
+    if(!existingCategory) {
+      return res.status(400).json({
+        message:"invalid category"
+      })
+    }
+
     // create product
     const product = await Product.create({
      name,
       description,
       price,
       stock,
-      category,
+      category: existingCategory._id,
       image,
       createdBy: req.user._id,
     });
@@ -68,7 +85,13 @@ const getProducts = async (req, res) => {
 
     // filter category
     if (category) {
-      query.category = category;
+      if (!mongoose.Types.ObjectId.isValid(category)) {
+        return res.status(400).json({
+          message: "Invalid category",
+        });
+      }
+
+      query.category = new mongoose.Types.ObjectId(category);
     }
 
     // filter price
@@ -89,6 +112,7 @@ const getProducts = async (req, res) => {
 
     const products = await Product.find(query)
       .populate("createdBy", "name email")
+      .populate("category", "name ")
       .skip(skip)
       .limit(Number(limit));
 
@@ -104,10 +128,12 @@ const getProducts = async (req, res) => {
 
 const getSingleProduct = async (req,res)=>{
     try {
-        const product = await Product.findOne({_id:req.params.id, isDeleted:false}).populate("createdBy","name email");
+        const product = await Product.findOne({_id:req.params.id, isDeleted:false})
+          .populate("createdBy","name email")
+          .populate("category", "name");
 
         if(!product){
-            return res.status.json({
+            return res.status(404).json({
                 message : "products not found"
             })
         }
@@ -130,7 +156,30 @@ const updateProduct = async (req,res)=>{
             })
         }
 
-        const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body , {New:true, runValidators:true})
+        const updateData = { ...req.body };
+
+        if (updateData.category) {
+          if (!mongoose.Types.ObjectId.isValid(updateData.category)) {
+            return res.status(400).json({
+              message: "Invalid category",
+            });
+          }
+
+          const existingCategory = await Category.findById(
+            updateData.category
+          );
+
+          if (!existingCategory) {
+            return res.status(400).json({
+              message: "invalid category",
+            });
+          }
+
+          updateData.category = existingCategory._id;
+        }
+
+        const updatedProduct = await Product.findByIdAndUpdate(req.params.id, updateData , {new:true, runValidators:true})
+          .populate("category", "name")
 
         res.status(200).json({
             message : "product updated successfully",

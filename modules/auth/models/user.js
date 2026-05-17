@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
         role:{
             type:String,
             required:true,
-            enam:["admin", "customer"],
+            enum:["admin", "customer"],
             default:"customer"
         },
         loginAttempts: {
